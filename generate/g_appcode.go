@@ -1230,7 +1230,7 @@ type Page struct {
 	List       interface{}
 }
 
-func PageUtil(count int64, offset int64, limit int64, list interface{}) Page {
+func pageUtil(count int64, offset int64, limit int64, list interface{}) Page {
 	pageNo := offset/limit + 1
 	pageSize := limit
 	tp := count / pageSize
@@ -1308,7 +1308,7 @@ func (c *{{ctrlName}}Controller) GetAll() {
 	if err != nil {
 		c.Data["json"] = err.Error()
 	} else {
-		c.Data["json"] = PageUtil(count, offset, limit, l)
+		c.Data["json"] = pageUtil(count, offset, limit, l)
 	}
 	c.ServeJSON()
 }

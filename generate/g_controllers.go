@@ -221,6 +221,36 @@ func (c *{{controllerName}}Controller) GetOne() {
 	c.ServeJSON()
 }
 
+type Page struct {
+	PageNo     int64
+	PageSize   int64
+	TotalPage  int64
+	TotalCount int64
+	FirstPage  bool
+	LastPage   bool
+	List       interface{}
+}
+
+func pageUtil(count int64, offset int64, limit int64, list interface{}) Page {
+	pageNo := offset/limit + 1
+	pageSize := limit
+	tp := count / pageSize
+	if count%pageSize > 0 {
+		tp = count/pageSize + 1
+	}
+	var page Page
+	switch v := list.(type) {
+	case []interface{}:
+		if len(v) == 0 {
+			nullList := make([]interface{}, 0)
+			page = Page{PageNo: pageNo, PageSize: pageSize, TotalPage: tp, TotalCount: count, FirstPage: pageNo == 1, LastPage: pageNo == tp, List: nullList}
+		} else {
+			page = Page{PageNo: pageNo, PageSize: pageSize, TotalPage: tp, TotalCount: count, FirstPage: pageNo == 1, LastPage: pageNo == tp, List: list}
+		}
+	}
+	return page
+}
+
 // GetAll ...
 // @Title Get All
 // @Description get {{controllerName}}
@@ -275,11 +305,11 @@ func (c *{{controllerName}}Controller) GetAll() {
 		}
 	}
 
-	l, err := models.GetAll{{controllerName}}(query, fields, sortby, order, offset, limit)
+	l, count, err := models.GetAll{{controllerName}}(query, fields, sortby, order, offset, limit)
 	if err != nil {
 		c.Data["json"] = err.Error()
 	} else {
-		c.Data["json"] = l
+		c.Data["json"] = pageUtil(count, offset, limit, l)
 	}
 	c.ServeJSON()
 }
