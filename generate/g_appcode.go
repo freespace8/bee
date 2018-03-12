@@ -1045,7 +1045,7 @@ func Get{{modelName}}ById(id int) (v *{{modelName}}, err error) {
 // GetAll{{modelName}} retrieves all {{modelName}} matches certain condition. Returns empty list if
 // no records exist
 func GetAll{{modelName}}(query map[string]string, fields []string, sortby []string, order []string,
-	offset int64, limit int64) (ml []interface{}, err error) {
+	offset int64, limit int64) (ml []interface{}, count int64, err error) {
 	o := orm.NewOrm()
 	qs := o.QueryTable(new({{modelName}}))
 	// query k=v
@@ -1070,7 +1070,7 @@ func GetAll{{modelName}}(query map[string]string, fields []string, sortby []stri
 				} else if order[i] == "asc" {
 					orderby = v
 				} else {
-					return nil, errors.New("Error: Invalid order. Must be either [asc|desc]")
+					return nil, 0, errors.New("Error: Invalid order. Must be either [asc|desc]")
 				}
 				sortFields = append(sortFields, orderby)
 			}
@@ -1084,7 +1084,7 @@ func GetAll{{modelName}}(query map[string]string, fields []string, sortby []stri
 				} else if order[0] == "asc" {
 					orderby = v
 				} else {
-					return nil, errors.New("Error: Invalid order. Must be either [asc|desc]")
+					return nil, 0, errors.New("Error: Invalid order. Must be either [asc|desc]")
 				}
 				sortFields = append(sortFields, orderby)
 			}
@@ -1093,12 +1093,15 @@ func GetAll{{modelName}}(query map[string]string, fields []string, sortby []stri
 		}
 	} else {
 		if len(order) != 0 {
-			return nil, errors.New("Error: unused 'order' fields")
+			return nil, 0, errors.New("Error: unused 'order' fields")
 		}
 	}
 
 	var l []{{modelName}}
 	qs = qs.OrderBy(sortFields...)
+	if offset == 0 {
+		count, err = qs.Count()
+	}
 	if _, err = qs.Limit(limit, offset).All(&l, fields...); err == nil {
 		if len(fields) == 0 {
 			for _, v := range l {
@@ -1115,9 +1118,9 @@ func GetAll{{modelName}}(query map[string]string, fields []string, sortby []stri
 				ml = append(ml, m)
 			}
 		}
-		return ml, nil
+		return ml, count, nil
 	}
-	return nil, err
+	return nil, 0, err
 }
 
 // Update{{modelName}} updates {{modelName}} by Id and returns error if
@@ -1217,6 +1220,36 @@ func (c *{{ctrlName}}Controller) GetOne() {
 	c.ServeJSON()
 }
 
+type Page struct {
+	PageNo     int64
+	PageSize   int64
+	TotalPage  int64
+	TotalCount int64
+	FirstPage  bool
+	LastPage   bool
+	List       interface{}
+}
+
+func PageUtil(count int64, offset int64, limit int64, list interface{}) Page {
+	pageNo := offset/limit + 1
+	pageSize := limit
+	tp := count / pageSize
+	if count%pageSize > 0 {
+		tp = count/pageSize + 1
+	}
+	var page Page
+	switch v := list.(type) {
+	case []interface{}:
+		if len(v) == 0 {
+			nullList := make([]interface{}, 0)
+			page = Page{PageNo: pageNo, PageSize: pageSize, TotalPage: tp, TotalCount: count, FirstPage: pageNo == 1, LastPage: pageNo == tp, List: nullList}
+		} else {
+			page = Page{PageNo: pageNo, PageSize: pageSize, TotalPage: tp, TotalCount: count, FirstPage: pageNo == 1, LastPage: pageNo == tp, List: list}
+		}
+	}
+	return page
+}
+
 // GetAll ...
 // @Title Get All
 // @Description get {{ctrlName}}
@@ -1271,11 +1304,11 @@ func (c *{{ctrlName}}Controller) GetAll() {
 		}
 	}
 
-	l, err := models.GetAll{{ctrlName}}(query, fields, sortby, order, offset, limit)
+	l, count, err := models.GetAll{{ctrlName}}(query, fields, sortby, order, offset, limit)
 	if err != nil {
 		c.Data["json"] = err.Error()
 	} else {
-		c.Data["json"] = l
+		c.Data["json"] = PageUtil(count, offset, limit, l)
 	}
 	c.ServeJSON()
 }
