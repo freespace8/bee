@@ -35,8 +35,8 @@ import (
 
 	"github.com/astaxie/beego/swagger"
 	"github.com/astaxie/beego/utils"
-	beeLogger "github.com/beego/bee/logger"
-	bu "github.com/beego/bee/utils"
+	beeLogger "github.com/freespace8/bee/logger"
+	bu "github.com/freespace8/bee/utils"
 )
 
 const (

@@ -14,10 +14,10 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/beego/bee/cmd/commands"
-	beeLogger "github.com/beego/bee/logger"
-	"github.com/beego/bee/logger/colors"
-	"github.com/beego/bee/utils"
+	"github.com/freespace8/bee/cmd/commands"
+	beeLogger "github.com/freespace8/bee/logger"
+	"github.com/freespace8/bee/logger/colors"
+	"github.com/freespace8/bee/utils"
 	"gopkg.in/yaml.v2"
 )
 
@@ -57,7 +57,7 @@ Prints the current Bee, Beego and Go version alongside the platform information.
 }
 var outputFormat string
 
-const version = "1.9.1"
+const version = "1.9.1 by freespace8"
 
 func init() {
 	fs := flag.NewFlagSet("version", flag.ContinueOnError)
